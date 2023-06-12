@@ -83,16 +83,18 @@ class ReadDocument:
             for row in list_data:
                 row_number = row[0]
                 row_text = row[1]
-                print(f'-----[ Line  {row_number} ]-----')
+                
+                if type(row_text) == str:
+                    print(f'-----[ Line  {row_number} ]-----')
 
-                if read_line:
-                    call_data = row_text.split(';')
-                    for line in call_data:
-                        print(line)
-                else:
-                    print(row_text)
+                    if read_line:
+                        call_data = row_text.split(';')
+                        for line in call_data:
+                            print(line)
+                    else:
+                        print(row_text)
 
-                print()
+                    print('\n\n')
         else:
             print("⛔️ Not data this column")
 
@@ -117,7 +119,7 @@ class SearchText:
                         print(f'-----[ Line  {row_number} ]-----')
                         print(line)
                         if first_leter == ' ':
-                            print("\n❌ [ Удалите символ ' ' начале строки ]")
+                            print("\n❌ [ Удалите символ ' ' в начале строки ]")
                         if self.pause:
                             input("Next -> ")
                         errors += 1
@@ -161,16 +163,27 @@ class ChangeDocument:
         self.list_data = list_data
         self.pause = pause
 
-    # удаляем пробелы в начале, в конце строки и в между атрибутами
-    def delete_space(self, call: str):
-        for row in self.list_data:
-            row_number = row[0]
-            cell_col_row = f'{call}{row_number}'
+    # получаем ячейку в столбце
+    def get_cell_in_column(self, cell_letter, cell_number):
+        cell = f'{cell_letter}{cell_number}'
+        return self.document.work_sheet[cell]
 
-            old_data = str(self.document.work_sheet[cell_col_row].value)
-            new_data = old_data.replace("; ", ";").strip()
-            self.document.work_sheet[cell_col_row] = new_data
-            print(f"✅ Space delete [{call}]\n")
+    # сохраняем новые данные в ячейку
+    def save_new_data_in_cell(self, cell_letter, cell_number, new_data):
+        cell = f'{cell_letter}{cell_number}'
+        self.document.work_sheet[cell] = new_data
+        return self.document
+
+    # заменяем сымволы в строке
+    def replace_symbol(self, text: str):
+        new_text = text.replace(';;', ';').replace('; ;', ';').replace('  ', ' ').replace('   ', ' ').strip()
+        if len(new_text) > 0:
+            if new_text[0] == ';':
+                new_text = new_text[1:]
+        if len(new_text) > 0:
+            if new_text[-1] == ';':
+                new_text = new_text[:-1]
+        return new_text
 
     # обьеденяем ячейки в одну
     def join_columns_text(self, save_column: str, join_columns: list, join_separator: str, end_text):
@@ -192,72 +205,92 @@ class ChangeDocument:
             print(new_text)
 
     # добавление фрагмента текста в каждую ячейку
-    def add_data_to_colums(self, letters_colunm: str, text: str):
+    def add_data_to_colums(self, cell_past: str, text: str):
         for row in self.list_data:
-            row_number = row[0]
-            row_text = row[1]
-            cell_col_row = f'{letters_colunm}{row_number}'
+            number_string = row[0]
+            cell_move_obj = self.get_cell_in_column(cell_past, number_string)
 
-            current_text_cell = self.document.work_sheet[cell_col_row]
-            # print(row_number, type(row_text))
-
-            if type(row_text) == str:
-                self.document.work_sheet[cell_col_row] = str(current_text_cell.value) + ";" + text
+            if cell_move_obj.value is not None:
+                new_text = str(cell_move_obj.value) + text
+                self.save_new_data_in_cell(cell_past, number_string, new_text)
             else:
-                self.document.work_sheet[cell_col_row] = text
+                self.save_new_data_in_cell(cell_past, number_string, text)
 
-        print(f"✅ Text add in [{letters_colunm}]\n")
+        print(f"✅ Text add in [{cell_past}]\n")
 
     # удалить фрагмент текста у всех ячейках
-    def delete_data_to_column(self, letters_colunm: str, text: str):
+    def delete_data_to_column(self, cell_move: str, text: str):
         for row in self.list_data:
-            row_number = row[0]
-            row_text = row[1]
-            cell_col_row = f'{letters_colunm}{row_number}'
-
-            if type(row_text) == str:
-                current_text_cell = str(self.document.work_sheet[cell_col_row].value)
-                new_data = current_text_cell.replace(text, '').replace(';;', ';').lstrip()
-            try:
-                if new_data[0] == ';':
-                    # new_data[0] = new_data[0].replace(';', '')
-                    new_data[0] = ''
-            except IndexError:
-                pass
-
-            try:
-                if new_data[-1] == ';':
-                    # new_data = new_data.replace(';', '')
-                    new_data[-1] = ''
-            except IndexError:
-                pass
-
-            self.document.work_sheet[cell_col_row] = new_data.lstrip()
-
-        print(f"✅ Text dell in [{letters_colunm}]\n")
-
-    # удаяем текст поиска с ячеек и добавляем в другую ячейку
-    def serch_add_dell(self, search: str, add_colunm, dell_colunm):
-        for row in self.list_data:
-            row_number = row[0]
-            row_text = row[1]
-
-            # ищим фрагмент текста в ячейке
-            search_text_lower = search.lower()
-            if type(row_text) == str and row_text.lower().find(search_text_lower) != -1:
-                print(f'\n-----[ Line  {row_number} ]-----')
-                print(row_text)
-
-                # удалить фрагмент текста в ячейке
-                dell_cell = f'{dell_colunm}{row_number}'
-                dell_cell_data = str(self.document.work_sheet[dell_cell].value)
-                dell_cell_data_new = dell_cell_data.replace(search, '').replace(';;', ';').lstrip()
-                self.document.work_sheet[dell_cell] = dell_cell_data_new
+            number_string = row[0]
+            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
             
-                # # добавление фрагмента текста в ячейку    
-                add_cell = f'{add_colunm}{row_number}'       
-                add_cell_data = str(self.document.work_sheet[add_cell].value)
-                if type(row_text) == str:
-                    self.document.work_sheet[add_cell] = add_cell_data + ";" + search
+            cell_move_obj_data = cell_move_obj.value
+            if cell_move_obj_data is not None:
+                new_data = cell_move_obj_data.replace(text, '')
+                cell_move_txt_new = self.replace_symbol(new_data)
+
+                self.save_new_data_in_cell(cell_move, number_string, cell_move_txt_new)
+
+        print(f"✅ Text dell in [{cell_move}]\n")
+    
+    # удаяем текст поиска с ячейки и добавляем в другую ячейку 
+    def serch_move_past(self, search: str, cell_move: str, cell_past: str):
+        for row in self.list_data:
+            number_string = row[0]
+            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
+
+            search_text_lower = search.lower()
+
+            if cell_move_obj.value is not None and cell_move_obj.value.lower().find(search_text_lower) != -1:
+                print(f'\n\n-----[ Line  {number_string} ]-----')
+                print(cell_move_obj.value)
+                print("\n--- [ new text cell_move] ---\n")
+                # удалить фрагмент текста в ячейке
+                cell_move_txt = cell_move_obj.value.replace(search, '')
+                cell_move_txt_new = self.replace_symbol(cell_move_txt)
+                self.save_new_data_in_cell(cell_move, number_string, cell_move_txt_new)
+                print(cell_move_txt_new)
+
+                # # добавление фрагмента текста в ячейку
+                cell_past_obj = self.get_cell_in_column(cell_past, number_string)
+                if cell_move_obj.value is not None:
+                    curent_text = cell_past_obj.value
+                    if str(curent_text) == "None":
+                        self.save_new_data_in_cell(cell_past, number_string, search)
+                    else:
+                        self.save_new_data_in_cell(cell_past, number_string, f"{cell_past_obj.value};{search}")
                 else:
-                    self.document.work_sheet[add_cell] = search
+                    self.save_new_data_in_cell(cell_past, number_string, search)
+
+    # добавление фрагмента текста в не пустую ячейку в начало
+    def add_data_start(self, cell_past: str, text: str):
+        for row in self.list_data:
+            number_string = row[0]
+            cell_past_obj = self.get_cell_in_column(cell_past, number_string)
+
+            if cell_past_obj.value is not None:
+                new_text = text + str(cell_past_obj.value)
+                self.save_new_data_in_cell(cell_past, number_string, new_text)
+
+        print(f"✅ Text add to start in [{cell_past}]\n")
+
+    # удаяем весь текст с одной ячееки и добавляем в другую ячейку
+    def move_to_other_cell(self, cell_move, cell_past):
+        for row in self.list_data:
+            number_string = row[0]
+
+            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
+            # вырезаем данные с ячейки если она не пустая
+            if cell_move_obj.value is not None:
+
+                cell_past_obj = self.get_cell_in_column(cell_past, number_string)
+                # вставляем данные в другую ячейку
+                if cell_past_obj.value is not None:
+                    self.save_new_data_in_cell(cell_past, number_string, f'{cell_past_obj.value};{cell_move_obj.value}')
+                elif cell_past_obj.value is None:
+                    self.save_new_data_in_cell(cell_past, number_string, cell_move_obj.value)
+
+            # очищаем ячейку откуда копируем текст
+            self.save_new_data_in_cell(cell_move, number_string, '')
+        
+        print(f"✅ Text dell cell [{cell_move}] and add cell [{cell_past}]\n")
