@@ -66,47 +66,36 @@ class ReadDocument:
         self.column_name: str = column_name
 
     # возвращаем список нумерованых строк с данными в указаной ячейке
-    def list_data_row(self) -> list:
+    def generate_list_data_row(self) -> list:
         data_rows = []
         start_number_string = 2
         for row in self.read_document.data_frame[self.column_name]:
             row_to_line = []
-            row_to_line.append(start_number_string)
-            row_to_line.append(row)
-            data_rows.append(row_to_line)
+            if type(row) == str:
+                row_to_line.append(start_number_string)
+                row_to_line.append(row)
+                data_rows.append(row_to_line)
             start_number_string += 1
         return data_rows
-    
+
     # Выводим данные ячейки
     # Аргумент "read_line" разобъет текст на строки по символу ";"
-    def read_list_data(self, list_data: str, read_line: bool):
+    def read_list_data_row(self, list_data: str, read_line: bool):
         number = 0
         if len(list_data) > 0:
-            for row in list_data:
-                number_string = row[0]
-                row_text = row[1]
-
-                # cell_move_obj = self.get_cell_in_column(cell_past, number_string)
-
-                # if cell_move_obj.value is not None:
-                #     new_text = str(cell_move_obj.value) + text
-                
-                if type(row_text) == str:
-                    print(f'-----[ Line  {number_string} ]-----')
-
-                    if read_line:
-                        call_data = row_text.split(';')
-                        for line in call_data:
-                            print(line)
-                    else:
-                        print(row_text)
-
-                    print('\n\n')
-                    number += 1
+            for number_string, text in list_data:              
+                print(f'-----[ Строка: {number_string} ]-----')
+                if read_line:
+                    call_data = text.split(';')
+                    for line in call_data:
+                        print(line + '\n\n')
+                else:
+                    print(text + '\n\n')
+                number += 1
         else:
-            print("⛔️ Not data this column")
+            print("⛔️ Колонка пустая")
 
-        print("Осталось: ", number)
+        print("Прочитано: ", number, "строк")
 
 
 class SearchText:
@@ -117,49 +106,38 @@ class SearchText:
     # проверяем строку на первую заглавную букву
     def checking_is_title(self) -> None:
         errors = 0
-        for row in self.list_data:
-            row_number = row[0]
-            row_text = row[1]
-            call_data = row_text.split(';')
-            
-            for line in call_data:
+        for number_string, text in self.list_data:            
+            for line in text.split(';'):
                 try:
                     first_leter = line[0]
                     if first_leter.istitle() == False and first_leter[0].isdigit() == False:
-                        print(f'-----[ Line  {row_number} ]-----')
-                        print(line)
+                        print(f'-----[ Строка {number_string} ]-----')
+                        print(line + "\n")
                         if first_leter == ' ':
-                            print("\n❌ [ Удалите символ ' ' в начале строки ]")
+                            print("\n❌ [ Удалите символ ' ' в начале строки ]\n")
                         if self.pause:
                             input("Next -> ")
                         errors += 1
-                        print("\n")
 
                 except IndexError:
-                    print(f'-----[ Line  {row_number} ]-----')
-                    print(line)
-                    print("\n❌ Обнаружен символ в [начале или конце] строки -> ")
-                    print("\n")
+                    print(f'-----[ Строка {number_string} ]-----')
+                    print(line + "\n")
+                    print("\n❌ Обнаружен символ в [начале или конце] строки -> \n")
                     if self.pause:
                         input("Next -> ")
                     errors += 1
-                    print("\n")
 
         print("Ошибок ->", errors, '\n')
 
     # ищим фрагмент текста в ячейке
     def serch_text(self, text: str) -> None:
         result = 0
-        for row in self.list_data:
-            row_number = row[0]
-            row_text = row[1]
-            call_data = row_text.split(';')
-            
-            for line in call_data:
+        for number_string, text in self.list_data:            
+            for line in text.split(';'):
                 search_word_lower = [word.lower() for word in text]
                 for search in search_word_lower:
                     if (line.lower()).find(search) != -1:
-                        print(f'\n-----[ Line  {row_number} ]-----')
+                        print(f'\n-----[ Line  {number_string} ]-----')
                         print(line)
                         print(f"\n✅ Найдено совпадение ->: {search}")
                         if self.pause:
@@ -172,74 +150,108 @@ class ChangeDocument:
         self.document = document
         self.list_data = list_data
         self.pause = pause
+        self.symbols = [';;', '; ;', '  ', '   ']
 
-    # получаем ячейку в столбце
-    def get_cell_in_column(self, cell_letter, cell_number):
+    # делаем первую букву каждой строки заглавной
+    def upper_first_letter_in_text(self, text: str) -> str:
+        split_text = text.split(';')
+        new_list = []
+        for line in split_text:
+            capitalized = line[0:1].upper() + line[1:]
+            new_list.append(capitalized)
+        return ';'.join(new_list)
+    
+    # заменяем сымволы в строке
+    def replace_symbol(self, text: str) -> str:
+        for symbol in self.symbols:
+            text.replace(symbol, ';')
+        text.strip()
+
+        if len(text) > 0:
+            if text[0] == ';':
+                text = text[1:]
+        if len(text) > 0:
+            if text[-1] == ';':
+                text = text[:-1]
+        return text.strip()
+    
+    # получаем обьект ячейки по координатам: например 'AC4'
+    def get_cell_obj(self, cell_letter: str, cell_number: str) -> object:
         cell = f'{cell_letter}{cell_number}'
         return self.document.work_sheet[cell]
 
-    # сохраняем новые данные в ячейку
-    def save_new_data_in_cell(self, cell_letter, cell_number, new_data):
-        cell = f'{cell_letter}{cell_number}'
-        self.document.work_sheet[cell] = new_data
+    # сохраняем результат в ячейку
+    def save_result_in_cell(self, cell_object: object, text: str) -> object:
+        self.document.work_sheet[cell_object.coordinate] = text
+        return self.document
+    
+    # добавление фрагмента текста в ячейку
+    def add_text_to_cell(self, cell_object: object, text: str) -> object:
+        if text:
+            cell_object_value = cell_object.value
+            if cell_object_value is not None:
+                cell_object_value = f'{cell_object_value};{text}'
+            else:
+                cell_object_value = text
+
+            clear_txt = self.replace_symbol(cell_object_value)
+            upper_first_letter = self.upper_first_letter_in_text(clear_txt)
+            self.save_result_in_cell(cell_object, upper_first_letter)
+        else:
+            self.save_result_in_cell(cell_object, None)
         return self.document
 
-    # заменяем сымволы в строке
-    def replace_symbol(self, text: str):
-        new_text = text.replace(';;', ';').replace('; ;', ';').replace('  ', ' ').replace('   ', ' ').strip()
-        if len(new_text) > 0:
-            if new_text[0] == ';':
-                new_text = new_text[1:]
-        if len(new_text) > 0:
-            if new_text[-1] == ';':
-                new_text = new_text[:-1]
-        return new_text
+    # добавление фрагмента текста в начало ячейки если она не пустая
+    def add_text_to_cell_stert(self, cell_past: str, text: str):
+        for number_string in self.document.list_len_string:
+            cell_past_obj = self.get_cell_obj(cell_past, number_string)
+            if cell_past_obj.value is not None:
+                new_text = text + cell_past_obj.value
+                self.save_result_in_cell(cell_past_obj, new_text)
+
+        print(f"✅ Text add to start in [{cell_past}]\n")
 
     # обьеденяем ячейки в одну
-    def join_columns_text(self, save_column: str, join_columns: list, join_separator: str, end_text):
+    def join_columns_text(self, save_column: str, join_columns: list, join_separator: str, end_text: str) -> None:
         for number_string in self.document.list_len_string:
             new_list_join = [col_row + str(number_string) for col_row in join_columns]
             new_data = []
 
             for column in new_list_join:
-                old_data = self.document.work_sheet[column].value.replace(end_text, '').strip()
+                old_data = self.get_cell_obj(column).value.replace(end_text, '').strip()
                 new_data.append(old_data)
             
             new_text = join_separator.join(new_data)
             if new_text:
                 new_text = new_text + ' ' + end_text
-
-            self.save_new_data_in_cell(save_column, number_string, new_text)
-            print(new_text)
+            
+            cell_save = self.get_cell_obj(save_column, number_string)
+            self.add_text_to_cell(cell_save, new_text)
 
     # добавление фрагмента текста в каждую ячейку
-    def add_data_to_colums(self, cell_past: str, text: str):
+    def add_text_to_column(self, cell_past: str, text: str) -> None:
         for number_string in self.document.list_len_string:
-            cell_move_obj = self.get_cell_in_column(cell_past, number_string)
-            if cell_move_obj.value is not None:
-                new_text = cell_move_obj.value + text
-                self.save_new_data_in_cell(cell_past, number_string, new_text)
-            else:
-                self.save_new_data_in_cell(cell_past, number_string, text)
+            cell_move_obj = self.get_cell_obj(cell_past, number_string)
+            self.add_text_to_cell(cell_move_obj, text)
 
         print(f"✅ Text added to each cell [{cell_past}]\n")
 
-    # удалить фрагмент текста у всех ячейках
-    def delete_data_to_column(self, cell_move: str, text: str):
+    # удалить фрагмент текста со всех ячейк в столбце
+    def remove_text_from_cell(self, cell_remove: str, text: str) -> None:
         for number_string in self.document.list_len_string:
-            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
-            if cell_move_obj.value is not None:
-                new_data = cell_move_obj.value.replace(text, '')
-                cell_move_txt_new = self.replace_symbol(new_data)
-                self.save_new_data_in_cell(cell_move, number_string, cell_move_txt_new)
+            cell_remove_obj = self.get_cell_obj(cell_remove, number_string)
+            if cell_remove_obj.value is not None:
+                new_data = cell_remove_obj.value.replace(text, '')
+                self.add_text_to_cell(cell_remove_obj, None)
+                self.add_text_to_cell(cell_remove_obj, new_data)
 
-        print(f"✅ Text dell in [{cell_move}]\n")
+        print(f"✅ Text dell in [{cell_remove}]\n")
     
-    # удаяем текст поиска с ячейки и добавляем в другую ячейку 
-    def serch_move_past(self, cell_move: str, cell_past: str, method_remove: str, search: list):
+    # удаяем текст поиска с ячейки и добавляем в другую ячейку
+    def serch_move_text_to_another_cell(self, cell_move: str, cell_past: str, method_remove: str, search: list) -> None:
 
         for number_string in self.document.list_len_string:
-            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
+            cell_move_obj = self.get_cell_obj(cell_move, number_string)
             search_text_lower = [word.lower() for word in search]
             
             if method_remove == 'str' and cell_move_obj.value is not None:
@@ -255,17 +267,13 @@ class ChangeDocument:
                                 cell_past_list_new_text.append(line)
                             # save text in current cell
                             current_text = cell_move_obj.value.replace(line, '')
-                            current_text_clear = self.replace_symbol(current_text)
-                            self.save_new_data_in_cell(cell_move, number_string, current_text_clear)
+                            self.add_text_to_cell(cell_move_obj, None)
+                            self.add_text_to_cell(cell_move_obj, current_text)
 
                 # добавление фрагмента текста в ячейку
-                cell_past_txt_add = self.replace_symbol(";".join(cell_past_list_new_text))
-                cell_past_obj = self.get_cell_in_column(cell_past, number_string)
-                if cell_past_obj.value is not None:
-                    self.save_new_data_in_cell(cell_past, number_string, f"{cell_past_obj.value};{cell_past_txt_add}")
-                else:
-                    self.save_new_data_in_cell(cell_past, number_string, cell_past_txt_add)
-
+                cell_past_txt_add = ";".join(cell_past_list_new_text)
+                cell_past_obj = self.get_cell_obj(cell_past, number_string)
+                self.add_text_to_cell(cell_past_obj, cell_past_txt_add)
                 print(f'\n\n-----[ Line  {number_string} ]-----')
                 print(cell_move_obj.value)     
             
@@ -276,40 +284,23 @@ class ChangeDocument:
 
                     # удалить фрагмент текста в ячейке
                     cell_move_txt = cell_move_obj.value.replace(search, '')
-                    cell_move_txt_new = self.replace_symbol(cell_move_txt)
-                    self.save_new_data_in_cell(cell_move, number_string, cell_move_txt_new)
+                    self.add_text_to_cell(cell_move_obj, cell_move_txt)
 
-                    # # добавление фрагмента текста в ячейку
-                    cell_past_obj = self.get_cell_in_column(cell_past, number_string)
-                    if cell_past_obj.value is not None:
-                        self.save_new_data_in_cell(cell_past, number_string, f"{cell_past_obj.value};{search}")
-                    else:
-                        self.save_new_data_in_cell(cell_past, number_string, search)
+                    # добавление фрагмента текста в ячейку
+                    cell_past_obj = self.get_cell_obj(cell_past, number_string)
+                    self.add_text_to_cell(cell_past_obj, search_text_lower[0])
 
-    # добавление фрагмента текста в не пустую ячейку в начало
-    def add_data_start(self, cell_past: str, text: str):
+    # вырезаем весь текст с одной ячееки и добавляем в другую ячейку
+    def move_text_to_another_cell(self, cell_move: str, cell_past: str) -> None:
         for number_string in self.document.list_len_string:
-            cell_past_obj = self.get_cell_in_column(cell_past, number_string)
-            if cell_past_obj.value is not None:
-                new_text = text + cell_past_obj.value
-                self.save_new_data_in_cell(cell_past, number_string, new_text)
-
-        print(f"✅ Text add to start in [{cell_past}]\n")
-
-    # удаяем весь текст с одной ячееки и добавляем в другую ячейку
-    def move_to_other_cell(self, cell_move, cell_past):
-        for number_string in self.document.list_len_string:
-            cell_move_obj = self.get_cell_in_column(cell_move, number_string)
+            cell_move_obj = self.get_cell_obj(cell_move, number_string)
             # вырезаем данные с ячейки если она не пустая
             if cell_move_obj.value is not None:
-                cell_past_obj = self.get_cell_in_column(cell_past, number_string)
+                cell_past_obj = self.get_cell_obj(cell_past, number_string)
                 # вставляем данные в другую ячейку
-                if cell_past_obj.value is not None:
-                    self.save_new_data_in_cell(cell_past, number_string, f'{cell_past_obj.value};{cell_move_obj.value}')
-                elif cell_past_obj.value is None:
-                    self.save_new_data_in_cell(cell_past, number_string, cell_move_obj.value)
+                self.add_text_to_cell(cell_past_obj, text=cell_move_obj.value)
 
             # очищаем ячейку откуда копируем текст
-            self.save_new_data_in_cell(cell_move, number_string, '')
+            self.add_text_to_cell(cell_move_obj, text=None)
         
         print(f"✅ Text dell cell [{cell_move}] and add cell [{cell_past}]\n")
