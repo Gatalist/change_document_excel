@@ -100,7 +100,7 @@ poetry shell
     ```python
     document = OpenDocument(read_document='smart-chasy.xlsx', sheet_name='Worksheet')
     ```
-    <b>строка 10</b>
+    <b>строка 10</b>  
     column_name="указываем название колонки" (для чтения)  
     ```python
     read_document = ReadDocument(document=document, column_name='Особенности-25849')
