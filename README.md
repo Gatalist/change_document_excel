@@ -94,13 +94,13 @@ poetry shell
 
 ## Запуск  
 4) Для запуска, необходимо разкомментировать нужную функцию в файле "main.py"
-    1) строка 5  
+    <b>строка 5</b>  
     read_document="указать свой файл - название"  
     sheet_name="название листа с которым работаете, обычно это - "Worksheet" как у примере ниже  
     ```python
     document = OpenDocument(read_document='smart-chasy.xlsx', sheet_name='Worksheet')
     ```
-    2) строка 10
+    <b>строка 10</b>
     column_name="указываем название колонки" (для чтения)  
     ```python
     read_document = ReadDocument(document=document, column_name='Особенности-25849')
