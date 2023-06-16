@@ -49,12 +49,12 @@ change.move_text_to_another_cell(cell_move='AE', cell_past='AD')
 ```
 
 Удаяем текст поиска с ячейки и добавляем в другую ячейку
-```python
 search_text = ['мАч'] или ['мАч', 'str'] текст что ищем указываем списком.  
 В список можно указывать нужное количество аргументов  
 cell_move - откуда вырезаем текст  
 cell_past - куда вставляем текст  
 method_remove - как вырезаем текст. если указать "str" то метод будет отрабатывать для строки (строка это каждый разделитьтель текста ";")
+```python
 change.serch_move_text_to_another_cell(cell_move="AD", cell_past="AG", method_remove='str', search=search_text)
 ```
 
@@ -99,8 +99,7 @@ poetry shell
     document = OpenDocument(read_document='smart-chasy.xlsx', sheet_name='Worksheet')
     ```
     3) строка 10 - column_name="указываем название колонки" (для чтения)
-    4)
-    ```python
+    4) ```python
     read_document = ReadDocument(document=document, column_name='Особенности-25849')
     ```
 
